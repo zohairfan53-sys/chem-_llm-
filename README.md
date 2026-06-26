@@ -1,1 +1,1 @@
-# chem-_llm-
+# chemistry_notes_llm-
