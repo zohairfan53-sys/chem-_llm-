@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemistry Notes LLM - arXiv Style Research Workspace</title>
+    <!-- Tailwind CSS for modern structure and layout utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for symbols -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for rendering Chemical & Mathematical equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es6/tex-mml-chtml.js"></script>
+    <!-- PDF.js for client-side PDF text extraction & visual canvas rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        /* arXiv academic styling overrides */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f5f4ef; /* Classic ivory/academic off-white background */
+            color: #222222;
+        }
+
+        .arxiv-header-font {
+            font-family: 'Libre Baskerville', Georgia, serif;
+        }
+
+        .academic-paper-page {
+            font-family: 'Lora', Georgia, serif;
+            background-color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid #dddcd4;
+            min-height: 1050px; /* Standard proportions */
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .code-style {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85em;
+        }
+
+        /* Customize scrollbars for arXiv sleek feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f0ea;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1bfae;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a3a190;
+        }
+
+        /* Interactive card flips */
+        .flip-card {
+            background-color: transparent;
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.5rem;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Dynamic Mind Map Canvas node styles */
+        .mindmap-node {
+            transition: all 0.2s ease-out;
+            cursor: grab;
+        }
+        .mindmap-node:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-sm">
+
+    <!-- TOP HEADER BAR: arXiv Branding + Global API Controls -->
+    <header class="bg-white border-b border-stone-300 py-3 px-5 flex justify-between items-center z-20 shrink-0 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <span class="bg-neutral-900 text-white font-serif font-bold text-xs tracking-widest px-2 py-1 rounded">arXiv style</span>
+            <div class="flex flex-col">
+                <h1 class="arxiv-header-font text-xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-teal-700"></i> Chemistry Notes LLM
+                </h1>
+                <p class="text-[10px] text-stone-500 uppercase tracking-widest font-mono">Multimodal Grounded Desk &bull; powered by gemini-2.5-flash</p>
+            </div>
+        </div>
+
+        <!-- Global API Key Config & Indicator Status -->
+        <div class="flex items-center space-x-3 bg-stone-50 p-1.5 rounded-lg border border-stone-200">
+            <div class="flex items-center space-x-1.5 px-2">
+                <!-- Connected Pulse Indicator -->
+                <div id="apiKeyIndicator" class="w-3 h-3 rounded-full bg-red-400 border border-white transition-all duration-300"></div>
+                <span id="apiStatusText" class="text-xs text-stone-600 font-medium">Inactive</span>
+            </div>
+            
+            <div class="relative flex items-center">
+                <span class="absolute left-2.5 text-stone-400 text-xs font-mono">KEY:</span>
+                <input 
+                    type="password" 
+                    id="geminiApiKeyInput" 
+                    placeholder="Enter Gemini API Key..." 
+                    class="pl-11 pr-8 py-1.5 text-xs rounded border border-stone-300 bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 w-56 font-mono"
+                    oninput="validateAndSaveKey()"
+                />
+                <button onclick="toggleKeyVisibility()" class="absolute right-2 text-stone-400 hover:text-stone-700">
+                    <i id="keyVisibilityIcon" class="fa-regular fa-eye text-xs"></i>
+                </button>
+            </div>
+            <button onclick="testApiKey()" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 text-xs font-medium rounded transition">
+                Connect
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE LAYOUT (Three-Panel Desk) -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- ================= LEFT SIDEBAR: Upload & Document Manager ================= -->
+        <aside class="w-80 bg-stone-50 border-r border-stone-300 flex flex-col shrink-0 overflow-y-auto">
+            <div class="p-4 border-b border-stone-200">
+                <h2 class="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-folder-open text-stone-500"></i> Document Desk
+                </h2>
+                <p class="text-[11px] text-stone-500 mb-4">Upload research papers or paste your raw notes directly. You can add multiple documents to cross-reference them in the chat.</p>
+                
+                <!-- Interactive File Upload Button & Dropzone -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">Upload File (.pdf, .txt, .md)</label>
+                    <div class="relative border-2 border-dashed border-stone-300 hover:border-teal-600 bg-white hover:bg-stone-50 rounded-lg p-3 text-center cursor-pointer transition shadow-sm" id="dropzoneContainer">
+                        <input 
+                            type="file" 
+                            id="fileUploadInput" 
+                            accept=".pdf,.txt,.md" 
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                            onchange="handleFileUpload(event)"
+                        />
+                        <div class="flex flex-col items-center justify-center space-y-1">
+                            <i id="uploadIcon" class="fa-solid fa-cloud-arrow-up text-stone-400 text-lg transition-transform"></i>
+                            <span class="text-xs font-medium text-stone-700" id="uploadBtnText">Choose PDF or Note file</span>
+                            <span class="text-[10px] text-stone-400">Drag & drop files here</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-stone-300"></div>
+                    <span class="flex-shrink mx-3 text-[10px] text-stone-400 font-mono uppercase">Or Paste manually</span>
+                    <div class="flex-grow border-t border-stone-300"></div>
+                </div>
+
+                <!-- Paste / Upload Document Form -->
+                <div class="space-y-3 mt-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 mb-1">Document Title</label>
+                        <input 
+                            type="text" 
+                            id="docTitleInput" 
+                            placeholder="e.g., Organic Synthesis Pathways" 
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-stone-300 focus:ring-1 focus:ring-teal-600 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 mb-1">Document Content</label>
+                        <textarea 
+                            id="docContentInput" 
+                            rows="4" 
+                            placeholder="Paste note content here... Use [Page 1], [Page 2] to manually break pages, or let the app parse pages automatically."
+                            class="w-full p-2.5 text-xs rounded border border-stone-300 focus:ring-1 focus:ring-teal-600 focus:outline-none font-sans leading-relaxed"
+                        ></textarea>
+                    </div>
+                    <button 
+                        onclick="addDocument()" 
+                        class="w-full bg-stone-800 hover:bg-black text-white py-1.5 px-3 rounded text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                        <i class="fa-solid fa-plus text-xs"></i> Add to Research Desk
+                    </button>
+                </div>
+            </div>
+
+            <!-- List of Documents -->
+            <div class="flex-1 p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-stone-700 uppercase tracking-wider">Active Library</h3>
+                    <span id="docCountBadge" class="bg-stone-200 text-stone-700 text-[10px] font-bold px-2 py-0.5 rounded-full">0 Documents</span>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="noDocsState" class="text-center py-8 text-stone-400 border border-dashed border-stone-200 rounded-lg bg-white p-4">
+                    <i class="fa-solid fa-square-rss text-2xl mb-2 text-stone-300"></i>
+                    <p class="text-xs font-medium">Your desk is currently empty</p>
+                    <p class="text-[10px] text-stone-400 mt-1">Upload files or paste text above to construct your workspace.</p>
+                </div>
+
+                <!-- Document List container -->
+                <div id="documentList" class="space-y-2 hidden"></div>
+            </div>
+
+            <!-- Demo Load Chemistry Sample -->
+            <div class="p-4 bg-stone-100 border-t border-stone-200">
+                <button 
+                    onclick="loadSampleNotes()" 
+                    class="w-full bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 py-1.5 px-3 rounded text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                    <i class="fa-solid fa-vial text-teal-600"></i> Load Sample Chemistry Notes
+                </button>
+            </div>
+        </aside>
+
+        <!-- ================= CENTER WORKSPACE: Document Viewer & Tools ================= -->
+        <section class="flex-1 flex flex-col bg-stone-100 overflow-hidden relative border-r border-stone-300">
+            
+            <!-- Toolbar for workspace modes -->
+            <div class="bg-white border-b border-stone-200 py-2.5 px-4 flex justify-between items-center shrink-0 shadow-sm z-10">
+                <div class="flex items-center space-x-2">
+                    <button 
+                        id="viewModeDocBtn" 
+                        onclick="switchWorkplaceMode('document')" 
+                        class="px-3.5 py-1.5 text-xs font-medium rounded bg-teal-50 text-teal-800 border border-teal-200 transition flex items-center gap-1.5"
+                    >
+                        <i class="fa-solid fa-file-invoice text-xs"></i> Document Reader
+                    </button>
+                    <button 
+                        id="viewModeMindmapBtn" 
+                        onclick="switchWorkplaceMode('mindmap')" 
+                        class="px-3.5 py-1.5 text-xs font-medium rounded text-stone-600 hover:bg-stone-100 transition flex items-center gap-1.5"
+                    >
+                        <i class="fa-solid fa-circle-nodes text-xs"></i> Interactive Mind Map
+                    </button>
+                    <button 
+                        id="viewModeFlashcardBtn" 
+                        onclick="switchWorkplaceMode('flashcard')" 
+                        class="px-3.5 py-1.5 text-xs font-medium rounded text-stone-600 hover:bg-stone-100 transition flex items-center gap-1.5"
+                    >
+                        <i class="fa-solid fa-graduation-cap text-xs"></i> High-Yield Flashcards (15)
+                    </button>
+                </div>
+
+                <!-- Document Viewer zoom and details (only visible in document mode) -->
+                <div id="viewerControls" class="flex items-center space-x-3">
+                    <button onclick="zoomViewer('out')" class="text-stone-500 hover:text-stone-800 p-1 bg-stone-50 hover:bg-stone-200 rounded border border-stone-300 transition" title="Zoom Out">
+                        <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
+                    </button>
+                    <span id="zoomPercentText" class="text-xs font-mono text-stone-600 select-none">100%</span>
+                    <button onclick="zoomViewer('in')" class="text-stone-500 hover:text-stone-800 p-1 bg-stone-50 hover:bg-stone-200 rounded border border-stone-300 transition" title="Zoom In">
+                        <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
+                    </button>
+                    <span class="text-stone-300">|</span>
+                    <span class="text-xs text-stone-500 font-mono">Pages Rendered: <span id="totalPageNum">0</span></span>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE SCREEN 1: Continuous Scroll Academic Document Viewer ================= -->
+            <div id="workspaceDocument" class="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth flex flex-col items-center">
+                
+                <!-- Title & Meta Header Block -->
+                <div class="w-full max-w-4xl bg-white border border-stone-300 p-6 rounded-lg shadow-sm font-sans mb-2">
+                    <div class="flex justify-between items-start text-xs font-mono text-stone-500 uppercase tracking-widest mb-2">
+                        <span>Active Document Dossier</span>
+                        <span id="paperCodeID">arXiv:2.5-flash-CHEM</span>
+                    </div>
+                    <h2 id="paperTitle" class="arxiv-header-font text-2xl font-bold leading-snug text-stone-950">
+                        No Document Selected
+                    </h2>
+                    <div class="mt-3 flex items-center space-x-2 text-stone-600 text-xs">
+                        <span class="font-semibold text-teal-800">Workspace Library Desk</span>
+                        <span>&bull;</span>
+                        <span id="paperWordsCount">0 words</span>
+                        <span>&bull;</span>
+                        <span id="paperPagesCount">0 pages total</span>
+                    </div>
+                </div>
+
+                <!-- Scrolling stack container for all academic pages (Supports canvas visual page stacking) -->
+                <div id="paperViewerContainer" class="w-full max-w-4xl space-y-8 transition-transform duration-200 transform-gpu">
+                    <div class="academic-paper-page p-12 text-center flex flex-col justify-center items-center text-stone-400 italic">
+                        <i class="fa-solid fa-file-pdf text-4xl mb-3 text-stone-300"></i>
+                        Select a document from the left library, or upload/paste one to preview all pages in full detail.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE SCREEN 2: Interactive Mind Map Canvas ================= -->
+            <div id="workspaceMindmap" class="flex-1 hidden flex-col relative bg-stone-900 overflow-hidden">
+                <!-- Toolbar overlay for Mind Map -->
+                <div class="absolute top-4 left-4 z-10 bg-black/75 backdrop-blur-md rounded-lg p-3 border border-stone-700 shadow-xl max-w-sm text-stone-200">
+                    <h4 class="text-xs font-bold text-teal-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-nodes"></i> Dynamic Chemical Mind Map
+                    </h4>
+                    <p class="text-[10px] text-stone-400 mb-3">Uses Gemini-2.5-Flash to extract and organize key concepts into an interactive node layout. Drag nodes to reshape, scroll to zoom.</p>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            onclick="generateMindMap()" 
+                            class="bg-teal-600 hover:bg-teal-700 text-white font-medium px-3 py-1.5 rounded text-xs transition flex items-center gap-1"
+                        >
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Map
+                        </button>
+                        <button 
+                            onclick="resetMindMapLayout()" 
+                            class="bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-300 font-medium px-2 py-1.5 rounded text-xs transition"
+                            title="Recenter Map"
+                        >
+                            <i class="fa-solid fa-arrows-to-center"></i> Reset View
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Info panel for clicked node details -->
+                <div id="mindmapInspector" class="absolute bottom-4 left-4 z-10 bg-black/75 backdrop-blur-md rounded-lg p-3 border border-stone-700 shadow-xl max-w-xs text-stone-200 hidden">
+                    <h5 class="text-xs font-bold text-teal-400 flex items-center justify-between">
+                        <span id="inspectNodeTitle">Node Detail</span>
+                        <button onclick="closeMindmapInspector()" class="text-stone-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                    </h5>
+                    <p id="inspectNodeDesc" class="text-[11px] text-stone-300 mt-1.5 leading-relaxed">No description provided.</p>
+                </div>
+
+                <!-- Interactive SVG Canvas Area -->
+                <div id="mindmapCanvasContainer" class="w-full h-full select-none cursor-grab active:cursor-grabbing">
+                    <svg id="mindmapSvg" class="w-full h-full">
+                        <g id="mindmapTransformGroup">
+                            <!-- SVG Connection lines dynamically added -->
+                            <g id="mindmapConnections"></g>
+                            <!-- SVG Interactive Nodes dynamically added -->
+                            <g id="mindmapNodes"></g>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE SCREEN 3: Interactive Flashcards ================= -->
+            <div id="workspaceFlashcard" class="flex-1 hidden flex-col bg-stone-50 overflow-y-auto p-8">
+                <div class="max-w-xl mx-auto w-full">
+                    
+                    <!-- Flashcards Intro Header -->
+                    <div class="text-center mb-6">
+                        <h3 class="arxiv-header-font text-2xl font-bold text-stone-900">15 High-Yield Chemical Memorization Flashcards</h3>
+                        <p class="text-xs text-stone-500 mt-1.5">Dynamic deck generated by Gemini 2.5 Flash from your active note. Interactive grading helps track retention.</p>
+                        
+                        <!-- Actions & Scores -->
+                        <div class="mt-4 flex flex-wrap justify-center items-center gap-3">
+                            <button 
+                                onclick="generateFlashcards()" 
+                                class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded text-xs transition flex items-center gap-1.5"
+                            >
+                                <i class="fa-solid fa-rotate"></i> Generate High-Yield Deck
+                            </button>
+                            <span class="text-stone-300">|</span>
+                            <div class="bg-stone-200 text-stone-800 px-3 py-1 rounded-full text-[11px] font-semibold">
+                                Score: <span id="flashcardScore">0 / 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Flashcard Display Interface -->
+                    <div id="flashcardsActiveArea" class="hidden">
+                        
+                        <!-- Progress Bar indicator -->
+                        <div class="mb-4">
+                            <div class="flex justify-between text-[11px] text-stone-500 font-mono mb-1">
+                                <span>Progress Tracking</span>
+                                <span id="flashcardIndexText">Card 1 / 15</span>
+                            </div>
+                            <div class="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                                <div id="flashcardProgressBar" class="bg-teal-600 h-full transition-all duration-300" style="width: 6.66%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 3D Flippable Card -->
+                        <div class="flip-card w-full h-64 mb-6 cursor-pointer" onclick="flipFlashcard()">
+                            <div id="flashcardInner" class="flip-card-inner">
+                                
+                                <!-- FRONT SIDE -->
+                                <div class="flip-card-front bg-white border-2 border-stone-300 rounded-xl p-6 flex flex-col justify-between shadow-md">
+                                    <div class="flex justify-between items-center text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+                                        <span>High-Yield Chem Concept</span>
+                                        <i class="fa-solid fa-arrows-spin text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 flex items-center justify-center text-center px-4">
+                                        <p id="cardFrontText" class="text-base text-stone-800 font-serif leading-relaxed">
+                                            What is the relationship between temperature and average kinetic energy of gas particles?
+                                        </p>
+                                    </div>
+                                    <p class="text-[10px] text-center text-stone-400 uppercase tracking-wider font-mono">Click anywhere to flip and view answer</p>
+                                </div>
+
+                                <!-- BACK SIDE -->
+                                <div class="flip-card-back bg-teal-900 border-2 border-teal-700 text-white rounded-xl p-6 flex flex-col justify-between shadow-lg">
+                                    <div class="flex justify-between items-center text-[10px] font-mono text-teal-300 uppercase tracking-widest">
+                                        <span>Correct Verified Answer</span>
+                                        <i class="fa-solid fa-graduation-cap text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 flex items-center justify-center text-center px-4 overflow-y-auto">
+                                        <p id="cardBackText" class="text-sm text-teal-50 font-sans leading-relaxed">
+                                            Average kinetic energy is directly proportional to absolute temperature (Kelvin), modeled as $$E_k = \frac{3}{2} k_B T$$.
+                                        </p>
+                                    </div>
+                                    <p class="text-[10px] text-center text-teal-300 uppercase tracking-wider font-mono">Click to return to question</p>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Flashcard Interactive Feedback Button controls -->
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <button 
+                                onclick="evaluateFlashcard(true)" 
+                                class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 py-2.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                            >
+                                <i class="fa-regular fa-circle-check text-emerald-600"></i> I Remembered Correctly!
+                            </button>
+                            <button 
+                                onclick="evaluateFlashcard(false)" 
+                                class="bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-800 py-2.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                            >
+                                <i class="fa-regular fa-circle-xmark text-rose-600"></i> I Forgot / Got it Wrong
+                            </button>
+                        </div>
+
+                        <!-- Navigation controls below card evaluation -->
+                        <div class="flex justify-between items-center mt-6">
+                            <button 
+                                onclick="navigateFlashcard('prev')" 
+                                class="bg-white hover:bg-stone-100 border border-stone-300 text-stone-700 px-4 py-2 rounded text-xs font-medium transition flex items-center gap-1"
+                            >
+                                <i class="fa-solid fa-arrow-left"></i> Previous Card
+                            </button>
+                            <button 
+                                onclick="navigateFlashcard('next')" 
+                                class="bg-stone-800 hover:bg-black text-white px-4 py-2 rounded text-xs font-medium transition flex items-center gap-1"
+                            >
+                                Next Card <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Deck Not Generated State -->
+                    <div id="flashcardsNotGeneratedState" class="text-center py-12 px-6 border border-dashed border-stone-300 bg-white rounded-xl">
+                        <i class="fa-solid fa-layer-group text-3xl mb-3 text-stone-300"></i>
+                        <h4 class="text-sm font-semibold text-stone-700">No High-Yield Flashcards Ready</h4>
+                        <p class="text-xs text-stone-500 mt-1 max-w-sm mx-auto">Select or upload a chemistry notes paper first, then click "Generate High-Yield Deck" to instantly build 15 highly specialized study cards.</p>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= RIGHT SIDEBAR: Advanced Conversational Chatbot ================= -->
+        <aside class="w-[360px] bg-white border-l border-stone-300 flex flex-col shrink-0 overflow-hidden relative">
+            
+            <!-- Chat Header Info -->
+            <div class="bg-stone-50 border-b border-stone-200 p-3.5 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="flex h-2.5 w-2.5 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-600"></span>
+                    </span>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-stone-700">arXiv Conversational LLM</h3>
+                </div>
+                <button 
+                    onclick="clearChatHistory()" 
+                    class="text-stone-400 hover:text-stone-700 text-xs flex items-center gap-1"
+                    title="Clear Conversation"
+                >
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+            </div>
+
+            <!-- Context Delineator Badge Bar -->
+            <div class="bg-stone-100 text-[10px] text-stone-500 py-1.5 px-3 border-b border-stone-200 flex items-center gap-1">
+                <i class="fa-solid fa-database text-teal-700"></i>
+                <span class="font-medium text-stone-600">Active Grounding:</span>
+                <span id="chatGroundingIndicator" class="font-mono text-stone-500 truncate max-w-[200px]">Entire Active Library (Generic AI mode supported)</span>
+            </div>
+
+            <!-- Chat messages feed container -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <!-- Welcome system assistant message -->
+                <div class="flex items-start space-x-2.5">
+                    <div class="w-7 h-7 bg-teal-800 text-white flex items-center justify-center rounded-lg text-xs shrink-0 font-serif">
+                        ar
+                    </div>
+                    <div class="flex-1 bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs leading-relaxed text-stone-800">
+                        <p class="font-bold text-stone-900 mb-1">Welcome to Chemistry Notes LLM!</p>
+                        <p class="mb-2">I am powered by <strong class="text-teal-800 font-mono">gemini-2.5-flash</strong>. I can operate in two intelligent modes seamlessly:</p>
+                        <ul class="list-disc pl-4 space-y-1 text-stone-600">
+                            <li><strong>Generic AI Assistant:</strong> Ask me global questions like <span class="text-stone-700 font-mono italic">"who is the richest man on earth"</span> or help writing code.</li>
+                            <li><strong>Notes Grounded AI:</strong> Upload multiple chemistry sheets, papers, or study notes. I will cross-reference your collection, and provide citations detailing exactly which note/document and page numbers contains the facts.</li>
+                        </ul>
+                        <p class="mt-2 text-[10px] text-stone-400">Please verify your Gemini API key in the top bar to initialize models.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Loading overlay or streaming status -->
+            <div id="chatLoadingIndicator" class="hidden px-4 py-2 bg-stone-50 border-t border-stone-200 flex items-center space-x-2 text-xs text-stone-500">
+                <div class="flex space-x-1">
+                    <div class="w-1.5 h-1.5 bg-teal-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-1.5 h-1.5 bg-teal-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-1.5 h-1.5 bg-teal-600 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                </div>
+                <span>Gemini 2.5 Flash thinking...</span>
+            </div>
+
+            <!-- User Chat Entry Form -->
+            <div class="p-3 bg-stone-50 border-t border-stone-300">
+                <div class="flex items-center space-x-2">
+                    <textarea 
+                        id="chatInput" 
+                        rows="2" 
+                        onkeydown="handleChatSubmit(event)"
+                        placeholder="Ask about uploaded notes or ask global Qs... (Press Enter to Send)"
+                        class="flex-1 p-2 text-xs rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-teal-600"
+                    ></textarea>
+                    <button 
+                        onclick="sendChatMessage()" 
+                        class="bg-teal-700 hover:bg-teal-800 text-white p-2.5 rounded-lg flex items-center justify-center transition shadow-sm"
+                    >
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+    </main>
+
+    <!-- SYSTEM ALERTS / STATUS BANNER -->
+    <div id="toastMessage" class="fixed bottom-4 right-4 bg-stone-900 text-stone-100 px-4 py-3 rounded-lg text-xs shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2">
+        <span id="toastIcon"><i class="fa-solid fa-circle-info text-teal-400"></i></span>
+        <span id="toastText">Default message toast</span>
+    </div>
+
+    <!-- MAIN APP STATE JAVASCRIPT -->
+    <script>
+        // Set up PDF.js global configurations
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Global variables for Chemistry Notes LLM Workspace
+        let apiKey = "";
+        let documents = [];
+        let activeDocId = null;
+        let zoomLevel = 100;
+        let activeMode = "document"; // document, mindmap, flashcard
+        
+        // Chat interaction history
+        let chatHistory = [];
+
+        // Dynamic Mind Map SVG interactive transforms
+        let mmZoom = 1;
+        let mmPanX = 0;
+        let mmPanY = 0;
+        let mmNodesData = [];
+        let isDraggingMmCanvas = false;
+        let dragStartX, dragStartY;
+
+        // Flashcards states
+        let flashcardDeck = [];
+        let activeFlashcardIndex = 0;
+        let flashcardFlipped = false;
+        let flashcardAnswersCount = 0;
+        let flashcardCorrectAnswersCount = 0;
+
+        // Document Structure Parser: detects [Page X] or splits long paragraphs into virtual pages
+        function parsePages(text) {
+            const pageMarkerRegex = /\[Page\s*(\d+)\]/gi;
+            let pages = [];
+            
+            if (pageMarkerRegex.test(text)) {
+                // Split by explicitly written markers like [Page 1], [Page 2]
+                let parts = text.split(/\[Page\s*\d+\]/gi);
+                // Extract marker numbers
+                let matches = text.match(/\[Page\s*(\d+)\]/gi);
+                
+                // Get the text before the first page marker if any exists
+                if (parts[0].trim().length > 0) {
+                    pages.push({
+                        pageNumber: 1,
+                        content: parts[0].trim()
+                    });
+                }
+                
+                for (let i = 0; i < matches.length; i++) {
+                    let pageNumStr = matches[i].replace(/[^\d]/g, '');
+                    let pageNum = parseInt(pageNumStr, 10) || (pages.length + 1);
+                    let pageContent = parts[i + 1] ? parts[i + 1].trim() : "";
+                    if (pageContent) {
+                        pages.push({
+                            pageNumber: pageNum,
+                            content: pageContent
+                        });
+                    }
+                }
+            } else {
+                // Automatically split into chunks of ~1200 characters to simulate professional pages
+                const charsPerPage = 1200;
+                let currentPos = 0;
+                let pageIndex = 1;
+                
+                while (currentPos < text.length) {
+                    let chunk = text.substr(currentPos, charsPerPage);
+                    // Try to avoid breaking mid-word by extending to nearest space
+                    if (currentPos + charsPerPage < text.length) {
+                        let nextSpace = text.indexOf(' ', currentPos + charsPerPage);
+                        if (nextSpace !== -1 && nextSpace - (currentPos + charsPerPage) < 150) {
+                            chunk = text.substring(currentPos, nextSpace);
+                        }
+                    }
+                    pages.push({
+                        pageNumber: pageIndex,
+                        content: chunk.trim()
+                    });
+                    currentPos += chunk.length;
+                    pageIndex++;
+                }
+            }
+            
+            // Fallback for completely empty documents
+            if (pages.length === 0) {
+                pages.push({ pageNumber: 1, content: text });
+            }
+            
+            return pages;
+        }
+
+        // Initialize and check local storage keys
+        window.onload = function() {
+            // Retrieve key from storage if present
+            const storedKey = localStorage.getItem("gemini_api_key");
+            if (storedKey) {
+                document.getElementById("geminiApiKeyInput").value = storedKey;
+                apiKey = storedKey;
+                validateAndSaveKey();
+            }
+
+            // Set default empty state
+            updateDocumentListUI();
+
+            // Setup mind map canvas interactive drag list
+            setupMindMapInteraction();
+            
+            // Setup Drag & Drop Visuals on the Upload Dropzone
+            setupDropzoneVisuals();
+        }
+
+        // Setup dropzone highlight classes
+        function setupDropzoneVisuals() {
+            const dropzone = document.getElementById("dropzoneContainer");
+            const uploadIcon = document.getElementById("uploadIcon");
+
+            dropzone.addEventListener("dragenter", (e) => {
+                e.preventDefault();
+                dropzone.classList.add("border-teal-600", "bg-teal-50");
+                uploadIcon.classList.add("scale-110", "text-teal-600");
+            });
+
+            dropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+            });
+
+            dropzone.addEventListener("dragleave", (e) => {
+                e.preventDefault();
+                dropzone.classList.remove("border-teal-600", "bg-teal-50");
+                uploadIcon.classList.remove("scale-110", "text-teal-600");
+            });
+
+            dropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.classList.remove("border-teal-600", "bg-teal-50");
+                uploadIcon.classList.remove("scale-110", "text-teal-600");
+            });
+        }
+
+        // Handle File Selection (PDF, TXT, MD)
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const name = file.name;
+            const extension = name.substring(name.lastIndexOf('.')).toLowerCase();
+            const rawTitle = name.replace(/\.[^/.]+$/, ""); // Strip file extension
+
+            const uploadBtnText = document.getElementById("uploadBtnText");
+            const uploadIcon = document.getElementById("uploadIcon");
+            
+            // Set Loading UI inside dropzone
+            uploadBtnText.innerText = "Parsing, please wait...";
+            uploadIcon.className = "fa-solid fa-spinner animate-spin text-teal-600 text-lg";
+
+            try {
+                if (extension === ".pdf") {
+                    await parseAndAddPdf(file, rawTitle);
+                } else if (extension === ".txt" || extension === ".md") {
+                    await parseAndAddTextFile(file, rawTitle);
+                } else {
+                    showToast("Unsupported file extension. Please select .pdf, .txt or .md.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to parse file. Please try copying & pasting contents instead.", "error");
+            } finally {
+                // Restore standard Upload UI states
+                uploadBtnText.innerText = "Choose PDF or Note file";
+                uploadIcon.className = "fa-solid fa-cloud-arrow-up text-stone-400 text-lg";
+                event.target.value = ""; // clear input
+            }
+        }
+
+        // Parse Standard Plain Text / Markdown Files
+        function parseAndAddTextFile(file, rawTitle) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    if (!content || content.trim().length === 0) {
+                        reject(new Error("Empty file content."));
+                        return;
+                    }
+
+                    const words = content.split(/\s+/).filter(w => w.length > 0).length;
+                    const pages = parsePages(content);
+
+                    const newDoc = {
+                        id: 'doc_' + Date.now(),
+                        title: rawTitle,
+                        content: content,
+                        wordsCount: words,
+                        pages: pages,
+                        isPdf: false,
+                        addedAt: new Date().toLocaleString()
+                    };
+
+                    documents.push(newDoc);
+                    showToast(`Successfully imported: "${rawTitle}"`, "success");
+                    
+                    selectDocument(newDoc.id);
+                    updateDocumentListUI();
+                    resolve();
+                };
+                reader.onerror = () => reject(new Error("File reading error"));
+                reader.readAsText(file);
+            });
+        }
+
+        // Parse Multi-Page PDFs using pdf.js client-side page-by-page (Preserves text, keeps pdf bytes)
+        async function parseAndAddPdf(file, rawTitle) {
+            return new Promise((resolve, reject) => {
+                const fileReader = new FileReader();
+                fileReader.onload = async function() {
+                    const typedarray = new Uint8Array(this.result);
+                    try {
+                        const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+                        let aggregatedText = "";
+
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map(item => item.str).join(" ");
+                            
+                            // Inject structural page division tags automatically for context grounding
+                            aggregatedText += `[Page ${i}]\n${pageText}\n\n`;
+                        }
+
+                        if (!aggregatedText || aggregatedText.replace(/\[Page \d+\]|\s/g, '').length === 0) {
+                            aggregatedText = "[Page 1]\n(No text content extracted. Verify if scanned image.)";
+                        }
+
+                        const words = aggregatedText.split(/\s+/).filter(w => w.length > 0).length;
+                        const pages = parsePages(aggregatedText);
+
+                        const newDoc = {
+                            id: 'doc_' + Date.now(),
+                            title: rawTitle,
+                            content: aggregatedText,
+                            wordsCount: words,
+                            pages: pages,
+                            isPdf: true,
+                            pdfBytes: typedarray, // Keep bytes for rendering on Canvas!
+                            addedAt: new Date().toLocaleString()
+                        };
+
+                        documents.push(newDoc);
+                        showToast(`Successfully extracted ${pdf.numPages} pages from "${rawTitle}" PDF!`, "success");
+                        
+                        selectDocument(newDoc.id);
+                        updateDocumentListUI();
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                fileReader.onerror = () => reject(new Error("PDF file conversion failed."));
+                fileReader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Validate Key locally and turn indicator status colors
+        function validateAndSaveKey() {
+            const val = document.getElementById("geminiApiKeyInput").value.trim();
+            const indicator = document.getElementById("apiKeyIndicator");
+            const statusText = document.getElementById("apiStatusText");
+
+            if (val.length > 5) {
+                apiKey = val;
+                localStorage.setItem("gemini_api_key", val);
+                indicator.className = "w-3 h-3 rounded-full bg-emerald-400 border border-white pulse-green";
+                statusText.innerText = "Key Stored";
+            } else {
+                apiKey = "";
+                localStorage.removeItem("gemini_api_key");
+                indicator.className = "w-3 h-3 rounded-full bg-red-400 border border-white";
+                statusText.innerText = "Inactive";
+            }
+        }
+
+        // Show/Hide Password Toggle
+        function toggleKeyVisibility() {
+            const input = document.getElementById("geminiApiKeyInput");
+            const icon = document.getElementById("keyVisibilityIcon");
+            if (input.type === "password") {
+                input.type = "text";
+                icon.className = "fa-regular fa-eye-slash text-xs";
+            } else {
+                input.type = "password";
+                icon.className = "fa-regular fa-eye text-xs";
+            }
+        }
+
+        // Test API Call to Gemini
+        async function testApiKey() {
+            if (!apiKey) {
+                showToast("Please enter a valid Gemini API Key first.", "error");
+                return;
+            }
+
+            showToast("Testing connection with Gemini...", "info");
+            const indicator = document.getElementById("apiKeyIndicator");
+            const statusText = document.getElementById("apiStatusText");
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: "Hello. Answer with exactly the word: Connected." }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("HTTP error with API. Check status.");
+                }
+
+                const data = await response.json();
+                const resText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+                if (resText.toLowerCase().includes("connect")) {
+                    indicator.className = "w-3 h-3 rounded-full bg-emerald-500 border border-white pulse-green";
+                    statusText.innerText = "Connected";
+                    showToast("Successfully authenticated with Gemini 2.5 Flash model!", "success");
+                } else {
+                    indicator.className = "w-3 h-3 rounded-full bg-amber-500 border border-white";
+                    statusText.innerText = "Check Response";
+                    showToast("API did not respond correctly. Verify key.", "warning");
+                }
+            } catch (err) {
+                console.error(err);
+                indicator.className = "w-3 h-3 rounded-full bg-red-500 border border-white";
+                statusText.innerText = "Auth Fail";
+                showToast("Connection failed. Check API key or connection.", "error");
+            }
+        }
+
+        // Generic Toast notification
+        function showToast(message, type = "info") {
+            const toast = document.getElementById("toastMessage");
+            const text = document.getElementById("toastText");
+            const icon = document.getElementById("toastIcon");
+
+            text.innerText = message;
+            
+            if (type === "success") {
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else if (type === "error") {
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-400"></i>';
+            } else if (type === "warning") {
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-400"></i>';
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-info text-sky-400"></i>';
+            }
+
+            // Slide in
+            toast.className = "fixed bottom-4 right-4 bg-stone-900 text-stone-100 px-4 py-3 rounded-lg text-xs shadow-2xl z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center space-x-2";
+            
+            // Timeout to slide out
+            setTimeout(() => {
+                toast.className = "fixed bottom-4 right-4 bg-stone-900 text-stone-100 px-4 py-3 rounded-lg text-xs shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2";
+            }, 4000);
+        }
+
+        // Add document to library lists
+        function addDocument() {
+            const titleInput = document.getElementById("docTitleInput");
+            const contentInput = document.getElementById("docContentInput");
+
+            const title = titleInput.value.trim();
+            const rawContent = contentInput.value.trim();
+
+            if (!title) {
+                showToast("Please provide a title for the document.", "warning");
+                return;
+            }
+            if (!rawContent) {
+                showToast("Please provide content to process.", "warning");
+                return;
+            }
+
+            // Word counting
+            const words = rawContent.split(/\s+/).filter(w => w.length > 0).length;
+
+            // Generate structural page breaks
+            const pages = parsePages(rawContent);
+
+            const newDoc = {
+                id: 'doc_' + Date.now(),
+                title: title,
+                content: rawContent,
+                wordsCount: words,
+                pages: pages,
+                isPdf: false,
+                addedAt: new Date().toLocaleString()
+            };
+
+            documents.push(newDoc);
+            
+            // Reset fields
+            titleInput.value = "";
+            contentInput.value = "";
+
+            showToast(`"${title}" added to active library.`, "success");
+            
+            // Auto select document
+            selectDocument(newDoc.id);
+            updateDocumentListUI();
+        }
+
+        // Sample Chemistry Notes Loader for immediate quick testing
+        function loadSampleNotes() {
+            const sampleNotes = [
+                {
+                    title: "Kinetics & Chemical Equilibrium",
+                    text: `[Page 1]
+KINETICS AND RATE LAWS
+Chemical kinetics study how fast chemical processes occur. The rate of a chemical reaction is defined as change in reactant or product concentration per unit of time. For a reaction:
+A + B -> C, the generic rate law is formulated as:
+$$\\text{Rate} = k [A]^m [B]^n$$
+where:
+- k is the experimental rate constant.
+- m and n are reaction orders determined from initial rates methods.
+
+FACTORS AFFECTING RATE
+1. Concentration: Increased concentrations trigger higher frequency of effective intermolecular collisions.
+2. Temperature: Elevating absolute temperature imparts thermal kinetic energy. According to Arrhenius equations:
+$$k = A e^{-\\frac{E_a}{R T}}$$
+where $E_a$ represents activation barrier energy and R is the gas constant ($8.314 \\text{ J}/(\\text{mol}\\cdot\\text{K})$).
+3. Catalysts: Speed reactions by creating alternative pathways with lowered activation energies.
+
+[Page 2]
+REVERSIBLE REACTIONS AND LE CHATELIER
+Many reaction mixtures attain a state of Dynamic Equilibrium, where rates of forward and reverse reactions balance. The ratio of product to reactant concentrations is represented by $K_c$.
+For: $aA + bB \\rightleftharpoons cC + dD$:
+$$K_c = \\frac{[C]^c [D]^d}{[A]^a [B]^b}$$
+
+Le Chatelier's Principle states that if stress is applied to an equilibrium mixture, the position of equilibrium shifts to counteract the stress:
+1. Concentration Shift: Adding reactant pushes equilibrium toward production of products.
+2. Volume/Pressure: Decreasing gas volume pushes the balance toward the side containing fewer total gas moles.
+3. Temperature Impact: 
+   - Exothermic reactions ($Q > 0$) treat heat as a product. Heating shifts the equilibrium to reactants, decreasing $K_c$.
+   - Endothermic reactions treat heat as a reactant. Heating shifts equilibrium to products, increasing $K_c$.
+
+[Page 3]
+CHEMICAL EQUILIBRIUM PROBLEMS
+Consider the classic Haber-Bosch synthesis reaction of ammonia gas:
+$$\\text{N}_2\\text{(g)} + 3\\text{H}_2\\text{(g)} \\rightleftharpoons 2\\text{NH}_3\\text{(g)} \\quad \\Delta H = -92.4 \\text{ kJ/mol}$$
+
+Because this process is exothermic, optimizing yields requires complex compromises:
+- High pressure shifts toward products (2 moles of ammonia versus 4 moles of reactants).
+- Low temperatures favor ammonia formation but dramatically slow the reaction kinetics.
+- Industrially, porous iron catalysts are utilized to overcome kinetic limitations at moderate temperatures (~450 °C).`
+                },
+                {
+                    title: "Acid-Base Dissociation & pH Notes",
+                    text: `[Page 1]
+ACID-BASE STRENGTH & BRONSTED-LOWRY
+According to Bronsted-Lowry, acids act as proton ($H^+$) donors, while bases act as proton acceptors. Water acts amphoterically, and self-ionizes:
+$$\\text{H}_2\\text{O} + \\text{H}_2\\text{O} \\rightleftharpoons \\text{H}_3\\text{O}^+ + \\text{OH}^-$$
+The ion-product constant of water $K_w$ at 25 °C is defined as:
+$$K_w = [\\text{H}_3\\text{O}^+] [\\text{OH}^-] = 1.0 \\times 10^{-14}$$
+
+pH is computed logarithmically:
+$$\\text{pH} = -\\log[\\text{H}_3\\text{O}^+]$$
+In a neutral solution, $[\\text{H}_3\\text{O}^+] = 1.0 \\times 10^{-7} \\text{ M}$, producing a pH of exactly 7.0.
+
+[Page 2]
+WEAK ACIDS AND BASES
+Unlike strong acids (e.g., HCl, $HNO_3$) which dissociate fully, weak acids establish equilibria:
+$$\\text{HA} + \\text{H}_2\\text{O} \\rightleftharpoons \\text{H}_3\\text{O}^+ + \\text{A}^-$$
+The acid dissociation constant $K_a$ is:
+$$K_a = \\frac{[\\text{H}_3\\text{O}^+][\\text{A}^-]}{[\\text{HA}]}$$
+
+Using the Henderson-Hasselbalch equation, we can compute the pH of weak acid buffer solutions:
+$$\\text{pH} = \\text{pK}_a + \\log\\frac{[\\text{A}^-]}{[\\text{HA}]}$$
+This formulation is highly reliable for designing therapeutic intravenous solutions and understanding cellular biochemical environments.`
+                }
+            ];
+
+            // Clear active documents before seeding to prevent duplicates
+            documents = [];
+            
+            sampleNotes.forEach(sample => {
+                const words = sample.text.split(/\s+/).filter(w => w.length > 0).length;
+                const pages = parsePages(sample.text);
+                documents.push({
+                    id: 'sample_' + Math.random().toString(36).substr(2, 9),
+                    title: sample.title,
+                    content: sample.text,
+                    wordsCount: words,
+                    pages: pages,
+                    isPdf: false,
+                    addedAt: new Date().toLocaleString()
+                });
+            });
+
+            showToast("Successfully pre-loaded sample Chemistry notes!", "success");
+            updateDocumentListUI();
+            
+            // Auto select the first note
+            selectDocument(documents[0].id);
+        }
+
+        // Rebuild the UI listing of documents on the left panel
+        function updateDocumentListUI() {
+            const list = document.getElementById("documentList");
+            const noDocs = document.getElementById("noDocsState");
+            const badge = document.getElementById("docCountBadge");
+
+            badge.innerText = `${documents.length} Document${documents.length === 1 ? '' : 's'}`;
+
+            if (documents.length === 0) {
+                list.className = "hidden";
+                noDocs.classList.remove("hidden");
+                return;
+            }
+
+            noDocs.classList.add("hidden");
+            list.className = "space-y-2";
+            list.innerHTML = "";
+
+            documents.forEach(doc => {
+                const isActive = doc.id === activeDocId;
+                const card = document.createElement("div");
+                card.className = `p-3 rounded-lg border transition-all cursor-pointer ${
+                    isActive 
+                        ? 'bg-white border-teal-700 shadow-sm ring-1 ring-teal-600' 
+                        : 'bg-white hover:bg-stone-100 border-stone-200'
+                }`;
+                card.onclick = () => selectDocument(doc.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-semibold text-xs text-stone-900 truncate max-w-[190px]">${doc.title}</h4>
+                        <button onclick="deleteDocument(event, '${doc.id}')" class="text-stone-400 hover:text-rose-600 p-0.5" title="Remove note">
+                            <i class="fa-regular fa-trash-can text-[10px]"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 text-[10px] text-stone-500 font-mono">
+                        <span><i class="fa-regular fa-copy"></i> ${doc.pages.length} Pages</span>
+                        <span>${doc.wordsCount} words</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // Select active document and load it in viewer
+        function selectDocument(docId) {
+            activeDocId = docId;
+            updateDocumentListUI();
+            renderActiveDocument();
+
+            // Highlight in chat grounding
+            const activeDoc = documents.find(d => d.id === docId);
+            const chatGrounding = document.getElementById("chatGroundingIndicator");
+            if (activeDoc) {
+                chatGrounding.innerText = `Selected: "${activeDoc.title}"`;
+            } else {
+                chatGrounding.innerText = "Entire Active Library";
+            }
+
+            // Reset dynamic tool generation views so they match the newly selected doc
+            resetInteractiveModulesState();
+        }
+
+        // Reset Mind map and Flashcard states back to start state
+        function resetInteractiveModulesState() {
+            // Recenter Mind map canvas state
+            mmNodesData = [];
+            renderMindMapNodes();
+            closeMindmapInspector();
+
+            // Reset Flashcards elements
+            flashcardDeck = [];
+            activeFlashcardIndex = 0;
+            flashcardFlipped = false;
+            document.getElementById("flashcardsActiveArea").classList.add("hidden");
+            document.getElementById("flashcardsNotGeneratedState").classList.remove("hidden");
+        }
+
+        // Delete note safely
+        function deleteDocument(e, docId) {
+            e.stopPropagation(); // Avoid selecting card
+            documents = documents.filter(d => d.id !== docId);
+            if (activeDocId === docId) {
+                activeDocId = documents.length > 0 ? documents[0].id : null;
+            }
+            updateDocumentListUI();
+            renderActiveDocument();
+            resetInteractiveModulesState();
+            showToast("Document deleted.", "info");
+        }
+
+        // Render current document viewer details.
+        // PDF documents render visually as exact visual stacked pages using PDF.js on Canvas.
+        // Pasted notes fall back to beautiful academic formatted text.
+        async function renderActiveDocument() {
+            const paperTitle = document.getElementById("paperTitle");
+            const paperWordsCount = document.getElementById("paperWordsCount");
+            const paperPagesCount = document.getElementById("paperPagesCount");
+            const paperCodeID = document.getElementById("paperCodeID");
+            const totalPageNum = document.getElementById("totalPageNum");
+            const viewerContainer = document.getElementById("paperViewerContainer");
+
+            const activeDoc = documents.find(d => d.id === activeDocId);
+
+            if (!activeDoc) {
+                paperTitle.innerText = "No Document Selected";
+                paperWordsCount.innerText = "0 words";
+                paperPagesCount.innerText = "0 pages total";
+                paperCodeID.innerText = "arXiv:2.5-flash-CHEM";
+                totalPageNum.innerText = "0";
+                
+                viewerContainer.innerHTML = `
+                    <div class="academic-paper-page p-12 text-center flex flex-col justify-center items-center text-stone-400 italic">
+                        <i class="fa-solid fa-file-pdf text-4xl mb-3 text-stone-300"></i>
+                        Select a document from the left library, or upload/paste one to preview all pages in full detail.
+                    </div>
+                `;
+                return;
+            }
+
+            paperTitle.innerText = activeDoc.title;
+            paperWordsCount.innerText = `${activeDoc.wordsCount} words`;
+            const totalPages = activeDoc.pages.length;
+            paperPagesCount.innerText = `${totalPages} page${totalPages === 1 ? '' : 's'} total`;
+            totalPageNum.innerText = totalPages;
+            
+            // Produce mock realistic code ID based on title hash
+            const computedHash = activeDoc.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            paperCodeID.innerText = `arXiv:2.5-flash.${computedHash}`;
+
+            viewerContainer.innerHTML = "";
+
+            if (activeDoc.isPdf && activeDoc.pdfBytes) {
+                // PDF page-by-page high-fidelity canvas rendering
+                try {
+                    const loadingTask = pdfjsLib.getDocument({ data: activeDoc.pdfBytes });
+                    const pdfDoc = await loadingTask.promise;
+                    
+                    totalPageNum.innerText = pdfDoc.numPages;
+                    paperPagesCount.innerText = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'} total`;
+
+                    // Stack all page canvases vertically inside a scrollable container with 12px gap between pages
+                    viewerContainer.className = "w-full max-w-4xl flex flex-col items-center gap-[12px] transition-transform duration-200 transform-gpu";
+
+                    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                        const page = await pdfDoc.getPage(pageNum);
+                        
+                        // Render at scale 1.5 for high-fidelity details
+                        const scale = 1.5;
+                        const viewport = page.getViewport({ scale: scale });
+
+                        // Academic visual page container wrapper
+                        const pageWrapper = document.createElement("div");
+                        pageWrapper.className = "bg-white p-3 rounded shadow-md border border-stone-200 flex flex-col items-center relative select-none hover:shadow-lg transition-shadow";
+                        pageWrapper.style.width = `${viewport.width + 24}px`;
+
+                        // Create page canvas element
+                        const canvas = document.createElement("canvas");
+                        canvas.className = "shadow-sm border border-stone-100 max-w-full h-auto";
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        const context = canvas.getContext('2d');
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        pageWrapper.appendChild(canvas);
+
+                        // Clean bottom page reference tag
+                        const pageLabel = document.createElement("div");
+                        pageLabel.className = "text-[10px] font-mono text-stone-400 mt-2 select-none uppercase tracking-widest";
+                        pageLabel.innerText = `Page ${pageNum} of ${pdfDoc.numPages}`;
+                        pageWrapper.appendChild(pageLabel);
+
+                        viewerContainer.appendChild(pageWrapper);
+
+                        // Trigger async PDF page render
+                        await page.render(renderContext).promise;
+                    }
+                } catch (err) {
+                    console.error("PDF high fidelity visual rendering failed: ", err);
+                    showToast("Error drawing pages visually. Displaying raw text extraction instead.", "error");
+                    viewerContainer.className = "w-full max-w-4xl space-y-8 transition-transform duration-200 transform-gpu";
+                    renderTextFallback(activeDoc, viewerContainer, totalPages);
+                }
+            } else {
+                // Formatting fallback for pasted raw notes & sample libraries
+                viewerContainer.className = "w-full max-w-4xl space-y-8 transition-transform duration-200 transform-gpu";
+                renderTextFallback(activeDoc, viewerContainer, totalPages);
+            }
+        }
+
+        // Render academic text sheets fallback
+        function renderTextFallback(activeDoc, viewerContainer, totalPages) {
+            activeDoc.pages.forEach((pageObj) => {
+                const pageElement = document.createElement("div");
+                pageElement.className = "academic-paper-page p-12 relative flex flex-col justify-between";
+                
+                pageElement.innerHTML = `
+                    <!-- Page Header line -->
+                    <div class="border-b border-stone-200 pb-2 mb-6 flex justify-between text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+                        <span>${activeDoc.title}</span>
+                        <span>Page ${pageObj.pageNumber} of ${totalPages}</span>
+                    </div>
+
+                    <!-- Page Content body -->
+                    <div class="flex-1 text-stone-800 leading-relaxed font-sans text-[13px] whitespace-pre-line text-left">
+                        ${pageObj.content}
+                    </div>
+
+                    <!-- Page Footer line -->
+                    <div class="border-t border-stone-200 pt-3 mt-6 flex justify-between text-[10px] font-mono text-stone-400">
+                        <span>Chemistry Notes LLM Workspace Platform</span>
+                        <span>[Page ${pageObj.pageNumber}]</span>
+                    </div>
+                `;
+                viewerContainer.appendChild(pageElement);
+            });
+
+            // Trigger MathJax typeset on text pages
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([viewerContainer]).catch(err => console.error("MathJax error: ", err));
+            }
+        }
+
+        // Zoom Controls for Academic Stacked Sheets
+        function zoomViewer(direction) {
+            const viewPaper = document.getElementById("paperViewerContainer");
+            const zoomText = document.getElementById("zoomPercentText");
+
+            if (direction === 'in') {
+                if (zoomLevel < 180) zoomLevel += 10;
+            } else {
+                if (zoomLevel > 60) zoomLevel -= 10;
+            }
+
+            zoomText.innerText = `${zoomLevel}%`;
+            viewPaper.style.transform = `scale(${zoomLevel / 100})`;
+            viewPaper.style.transformOrigin = 'top center';
+        }
+
+        // Workplace tab switching
+        function switchWorkplaceMode(mode) {
+            activeMode = mode;
+            
+            // Buttons UI reset
+            const viewDocBtn = document.getElementById("viewModeDocBtn");
+            const viewMmBtn = document.getElementById("viewModeMindmapBtn");
+            const viewFcBtn = document.getElementById("viewModeFlashcardBtn");
+
+            viewDocBtn.className = "px-3.5 py-1.5 text-xs font-medium rounded text-stone-600 hover:bg-stone-100 transition flex items-center gap-1.5";
+            viewMmBtn.className = "px-3.5 py-1.5 text-xs font-medium rounded text-stone-600 hover:bg-stone-100 transition flex items-center gap-1.5";
+            viewFcBtn.className = "px-3.5 py-1.5 text-xs font-medium rounded text-stone-600 hover:bg-stone-100 transition flex items-center gap-1.5";
+
+            // Div screens reset
+            document.getElementById("workspaceDocument").classList.add("hidden");
+            document.getElementById("workspaceMindmap").classList.add("hidden");
+            document.getElementById("workspaceFlashcard").classList.add("hidden");
+            document.getElementById("viewerControls").classList.add("hidden");
+
+            if (mode === 'document') {
+                viewDocBtn.className = "px-3.5 py-1.5 text-xs font-medium rounded bg-teal-50 text-teal-800 border border-teal-200 transition flex items-center gap-1.5";
+                document.getElementById("workspaceDocument").classList.remove("hidden");
+                document.getElementById("viewerControls").classList.remove("hidden");
+            } else if (mode === 'mindmap') {
+                viewMmBtn.className = "px-3.5 py-1.5 text-xs font-medium rounded bg-stone-800 text-stone-100 transition flex items-center gap-1.5";
+                document.getElementById("workspaceMindmap").classList.remove("hidden");
+            } else if (mode === 'flashcard') {
+                viewFcBtn.className = "px-3.5 py-1.5 text-xs font-medium rounded bg-stone-800 text-stone-100 transition flex items-center gap-1.5";
+                document.getElementById("workspaceFlashcard").classList.remove("hidden");
+            }
+        }
+
+        // ================= CHATBOT: Multi-document Grounded Intelligence =================
+
+        // Clear Chat feed
+        function clearChatHistory() {
+            chatHistory = [];
+            const chatBox = document.getElementById("chatMessages");
+            chatBox.innerHTML = `
+                <div class="flex items-start space-x-2.5">
+                    <div class="w-7 h-7 bg-teal-800 text-white flex items-center justify-center rounded-lg text-xs shrink-0 font-serif">
+                        ar
+                    </div>
+                    <div class="flex-1 bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs leading-relaxed text-stone-800">
+                        <p class="font-bold text-stone-900 mb-1 font-serif">Workspace Restructured</p>
+                        <p>I have reset our dialogue feed. I am ready to conduct fresh chemical inquiries or answer general questions.</p>
+                    </div>
+                </div>
+            `;
+            showToast("Conversation cleared.", "info");
+        }
+
+        // Enter Key submit listener
+        function handleChatSubmit(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        // Send chat message
+        async function sendChatMessage() {
+            const chatInput = document.getElementById("chatInput");
+            const query = chatInput.value.trim();
+
+            if (!query) return;
+
+            // Render User Bubble
+            renderUserMessage(query);
+            chatInput.value = "";
+
+            // Call Gemini
+            await generateAIResponse(query);
+        }
+
+        function renderUserMessage(text) {
+            const feed = document.getElementById("chatMessages");
+            const bubble = document.createElement("div");
+            bubble.className = "flex items-start space-x-2.5 justify-end";
+            bubble.innerHTML = `
+                <div class="flex-1 bg-teal-50 border border-teal-200 rounded-lg p-3 text-xs leading-relaxed text-stone-800 text-right max-w-[85%]">
+                    <p class="font-bold text-teal-900 mb-1">You</p>
+                    <p class="whitespace-pre-line text-left inline-block">${text}</p>
+                </div>
+                <div class="w-7 h-7 bg-teal-100 text-teal-800 flex items-center justify-center rounded-lg text-xs font-bold shrink-0">
+                    U
+                </div>
+            `;
+            feed.appendChild(bubble);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        // Calling LLM with Multi-Document groundings
+        async function generateAIResponse(userPrompt) {
+            const chatBox = document.getElementById("chatMessages");
+            const loading = document.getElementById("chatLoadingIndicator");
+
+            if (!apiKey) {
+                renderAssistantMessage("⚠️ **API Key missing**: Please enter your Gemini API Key in the top status bar, and click 'Connect' to enable active chemical reasoning queries.");
+                return;
+            }
+
+            loading.classList.remove("hidden");
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Formulate grounded system context of ALL documents
+            let documentContext = "";
+            if (documents.length > 0) {
+                documentContext += "Here are the scientific chemistry papers and notes uploaded to your active library workspace:\n\n";
+                documents.forEach(doc => {
+                    documentContext += `====================\n`;
+                    documentContext += `DOCUMENT TITLE: "${doc.title}"\n`;
+                    doc.pages.forEach(pg => {
+                        documentContext += `--- [Page ${pg.pageNumber}] ---\n`;
+                        documentContext += `${pg.content}\n`;
+                    });
+                    documentContext += `====================\n\n`;
+                });
+            } else {
+                documentContext = "Currently, no papers are uploaded. Answer generic requests using your absolute best intelligence.";
+            }
+
+            // Construct structural instructions
+            const systemPrompt = `You are "Chemistry Notes LLM", an intelligent research assistant styled after LaTeX and arXiv academic rigor.
+You are running on the advanced Gemini 2.5 Flash architecture.
+
+CORE RULES:
+1. Grounding and Citations: 
+   - If the user's question can be answered using the provided chemistry notes/papers, you MUST answer it using details from the documents.
+   - You MUST cite exactly which document and which PAGE number contains the fact (e.g. "[Ideal Gas Laws, Page 2]").
+   - Mention citations inline, e.g. "According to [Kinetics & Equilibrium, Page 1], rate coefficients are...".
+   - If multiple documents or pages discuss a concept, quote both in detail and distinguish their contributions.
+2. Generic AI Mode:
+   - If the user asks a generic question completely unrelated to the uploaded papers (e.g. "who is the richest man on earth", "write a python function to fetch stock prices", "who wrote Romeo and Juliet"), you MUST answer it accurately and comprehensively. Do not say "I don't know because it isn't in the uploaded notes." Just answer it like a general purpose AI, but retain your scholarly tone.
+3. Chemistry formatting:
+   - Use LaTeX syntax for chemistry formulas and calculations, e.g. use $K_c$ instead of Kc.
+   - Use $$ for displayed blocks, e.g. $$\\text{Rate} = k [A]^m$$.
+   - Never output raw unicode Greek letters or plain subscripts if you can write them as clean LaTeX formula components.
+4. Professional tone: Be precise, informative, and structurally clear. Recommend chemical mechanism steps where helpful.`;
+
+            // Prepare Gemini Request Payload with retries
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: `SYSTEM DIRECTIVES:\n${systemPrompt}\n\nWORKSPACE LIBRARY FILES:\n${documentContext}\n\nWORKSPACE ACTIVE QUERY:\n${userPrompt}` }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.3,
+                    topP: 0.95
+                }
+            };
+
+            const maxRetries = 5;
+            let attempt = 0;
+            let delay = 1000;
+            let success = false;
+            let resultData = null;
+
+            while (attempt < maxRetries && !success) {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        resultData = await response.json();
+                        success = true;
+                    } else {
+                        const errBody = await response.text();
+                        throw new Error(`Status: ${response.status} - ${errBody}`);
+                    }
+                } catch (err) {
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        loading.classList.add("hidden");
+                        renderAssistantMessage(`❌ **API Connection Error**: Failed after ${maxRetries} connection attempts. Please make sure your API key is correct or try again shortly.\n\nDetails: *${err.message}*`);
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; 
+                }
+            }
+
+            loading.classList.add("hidden");
+
+            try {
+                const answer = resultData.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (answer) {
+                    renderAssistantMessage(answer);
+                } else {
+                    renderAssistantMessage("⚠️ **Empty Response**: Gemini generated an empty response. Verify if the note text is safe or try rephrasing.");
+                }
+            } catch (err) {
+                console.error(err);
+                renderAssistantMessage("❌ **Response Processing Error**: Could not parse response from Gemini endpoint.");
+            }
+        }
+
+        // Render response bubble
+        function renderAssistantMessage(markdownText) {
+            const feed = document.getElementById("chatMessages");
+            const bubble = document.createElement("div");
+            bubble.className = "flex items-start space-x-2.5";
+            
+            // Basic custom markdown parsing logic for bold and lists
+            let processedText = markdownText
+                .replace(/\n\n/g, '<br/><br/>')
+                .replace(/\n/g, '<br/>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code class="bg-stone-100 text-rose-600 px-1 py-0.5 rounded font-mono text-[11px]">$1</code>');
+
+            bubble.innerHTML = `
+                <div class="w-7 h-7 bg-teal-800 text-white flex items-center justify-center rounded-lg text-xs shrink-0 font-serif">
+                    ar
+                </div>
+                <div class="flex-1 bg-white border border-stone-200 rounded-lg p-3 text-xs leading-relaxed text-stone-800 academic-p-render shadow-sm">
+                    <p class="font-bold text-teal-900 mb-1 font-serif">Chemistry Notes LLM</p>
+                    <div class="space-y-1.5 break-words">${processedText}</div>
+                </div>
+            `;
+            feed.appendChild(bubble);
+            feed.scrollTop = feed.scrollHeight;
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([bubble]).catch(err => console.error(err));
+            }
+        }
+
+        // ================= INTERACTIVE WORKSPACE SCREEN 2: SVG Mind Map Canvas =================
+
+        // Generate chemical Mind map structured layout from Document contents
+        async function generateMindMap() {
+            if (!apiKey) {
+                showToast("API Key is required to construct the dynamic mind map.", "error");
+                return;
+            }
+
+            const activeDoc = documents.find(d => d.id === activeDocId);
+            if (!activeDoc) {
+                showToast("Please select a document first from the left panel.", "warning");
+                return;
+            }
+
+            showToast("Gemini is constructing mind map structure...", "info");
+
+            const mindmapPrompt = `Analyze the chemistry document titled "${activeDoc.title}".
+Extract the core central concept, and at least 5 to 8 critical child concepts.
+For each child concept, provide:
+1. A concise concept name.
+2. A single descriptive sentence detailing its chemical importance or math formula.
+3. One sub-relationship or parameter to attach.
+
+Format the output strictly as a valid JSON object matching this schema so I can build a graphical node map. Do not include any markdown backticks or extra text, output ONLY raw JSON:
+{
+  "centerNode": {
+    "title": "Core Subject",
+    "desc": "The central chemistry topic"
+  },
+  "children": [
+    {
+      "title": "Concept Alpha",
+      "desc": "Detail equation or mechanism explanation.",
+      "subConcepts": ["Term A", "Term B"]
+    }
+  ]
+}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: mindmapPrompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.1
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error("API failed to generate mind map JSON.");
+
+                const resData = await response.json();
+                const rawJson = resData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+                
+                // Parse and build the visual tree
+                const mapData = JSON.parse(rawJson);
+                buildMindMapLayout(mapData);
+                showToast("Interactive Chemistry Mind Map populated!", "success");
+
+            } catch (err) {
+                console.error(err);
+                showToast("Could not build structure. Generating offline fallback map...", "warning");
+                generateFallbackMindMap();
+            }
+        }
+
+        // Build mind map nodes inside coordinate workspace
+        function buildMindMapLayout(data) {
+            const width = document.getElementById("mindmapSvg").clientWidth || 800;
+            const height = document.getElementById("mindmapSvg").clientHeight || 500;
+
+            const cx = width / 2;
+            const cy = height / 2;
+
+            mmNodesData = [];
+
+            // 1. Center Node
+            const centerNode = {
+                id: 'node_center',
+                title: data.centerNode?.title || "Chemistry Subject",
+                desc: data.centerNode?.desc || "Main theme",
+                x: cx,
+                y: cy,
+                type: 'center',
+                radius: 45
+            };
+            mmNodesData.push(centerNode);
+
+            // 2. Child nodes circular distribution
+            const children = data.children || [];
+            const r = Math.min(width, height) * 0.28; // orbit radius
+
+            children.forEach((child, index) => {
+                const angle = (index / children.length) * 2 * Math.PI;
+                const childX = cx + r * Math.cos(angle);
+                const childY = cy + r * Math.sin(angle);
+                const childId = `node_child_${index}`;
+
+                mmNodesData.push({
+                    id: childId,
+                    title: child.title,
+                    desc: child.desc,
+                    x: childX,
+                    y: childY,
+                    parentId: centerNode.id,
+                    type: 'child',
+                    radius: 30
+                });
+
+                // 3. Sub concepts scattered outward
+                const subConcepts = child.subConcepts || [];
+                const subDist = 65;
+                subConcepts.forEach((sub, subIndex) => {
+                    const subAngle = angle + ((subIndex - (subConcepts.length - 1)/2) * 0.35);
+                    const sx = childX + subDist * Math.cos(subAngle);
+                    const sy = childY + subDist * Math.sin(subAngle);
+                    
+                    mmNodesData.push({
+                        id: `node_sub_${index}_${subIndex}`,
+                        title: sub,
+                        desc: `Associated with ${child.title}`,
+                        x: sx,
+                        y: sy,
+                        parentId: childId,
+                        type: 'sub',
+                        radius: 20
+                    });
+                });
+            });
+
+            // Recenter viewport
+            mmZoom = 1;
+            mmPanX = 0;
+            mmPanY = 0;
+
+            renderMindMapNodes();
+        }
+
+        // Offline default fallback if API is unreachable
+        function generateFallbackMindMap() {
+            const activeDoc = documents.find(d => d.id === activeDocId);
+            const title = activeDoc ? activeDoc.title : "Chemistry Chemistry Notes";
+            
+            const fallbackData = {
+                centerNode: {
+                    title: title,
+                    desc: "Central concepts extracted from active desk notes."
+                },
+                children: [
+                    { title: "Kinetics Mechanisms", desc: "Reaction steps and dynamic state velocities.", subConcepts: ["Rate laws", "Catalysts"] },
+                    { title: "Dynamic Equilibrium", desc: "Stable balanced forward and reverse ratios.", subConcepts: ["Kc Constant", "Le Chatelier"] },
+                    { title: "Acid-Base Dissociation", desc: "Hydronium dissociation behaviors in solution.", subConcepts: ["pH levels", "Bronsted Proton"] },
+                    { title: "Thermodynamic Control", desc: "Energy barriers and entropic driving forces.", subConcepts: ["Arrhenius Eq", "Activation"] }
+                ]
+            };
+            buildMindMapLayout(fallbackData);
+        }
+
+        // Draw Nodes inside SVG Canvas group
+        function renderMindMapNodes() {
+            const transformGroup = document.getElementById("mindmapTransformGroup");
+            const connGroup = document.getElementById("mindmapConnections");
+            const nodeGroup = document.getElementById("mindmapNodes");
+
+            // Apply global pan and zoom matrix transforms
+            transformGroup.setAttribute('transform', `translate(${mmPanX}, ${mmPanY}) scale(${mmZoom})`);
+
+            // Clear previous SVG content
+            connGroup.innerHTML = "";
+            nodeGroup.innerHTML = "";
+
+            if (mmNodesData.length === 0) return;
+
+            // 1. Draw connecting lines
+            mmNodesData.forEach(node => {
+                if (node.parentId) {
+                    const parent = mmNodesData.find(n => n.id === node.parentId);
+                    if (parent) {
+                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        line.setAttribute("x1", node.x);
+                        line.setAttribute("y1", node.y);
+                        line.setAttribute("x2", parent.x);
+                        line.setAttribute("y2", parent.y);
+                        
+                        let strokeColor = "#4b5563"; 
+                        let strokeWidth = "1.5";
+                        if (node.type === 'sub') {
+                            strokeColor = "#374151";
+                            strokeWidth = "1";
+                        } else if (node.type === 'child') {
+                            strokeColor = "#0d9488";
+                            strokeWidth = "2";
+                        }
+
+                        line.setAttribute("stroke", strokeColor);
+                        line.setAttribute("stroke-width", strokeWidth);
+                        line.setAttribute("stroke-dasharray", node.type === 'sub' ? "3 3" : "none");
+                        connGroup.appendChild(line);
+                    }
+                }
+            });
+
+            // 2. Draw Nodes
+            mmNodesData.forEach(node => {
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("class", "mindmap-node cursor-pointer");
+                g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+                
+                g.addEventListener('mousedown', (e) => startNodeDrag(e, node));
+                g.addEventListener('click', (e) => inspectNode(e, node));
+
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("r", node.radius);
+                
+                let fillColor = "#111827";
+                let strokeColor = "#374151";
+                if (node.type === 'center') {
+                    fillColor = "#115e59"; 
+                    strokeColor = "#2dd4bf";
+                } else if (node.type === 'child') {
+                    fillColor = "#1f2937";
+                    strokeColor = "#0d9488";
+                } else {
+                    fillColor = "#374151";
+                    strokeColor = "#9ca3af";
+                }
+
+                circle.setAttribute("fill", fillColor);
+                circle.setAttribute("stroke", strokeColor);
+                circle.setAttribute("stroke-width", "2");
+                g.appendChild(circle);
+
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("dy", "4");
+                text.setAttribute("fill", "#f9fafb");
+                text.setAttribute("font-size", node.type === 'center' ? "11px" : "9px");
+                text.setAttribute("font-weight", "600");
+                
+                let dispTitle = node.title;
+                if (dispTitle.length > 12) {
+                    dispTitle = dispTitle.substring(0, 10) + "..";
+                }
+                text.textContent = dispTitle;
+                g.appendChild(text);
+
+                nodeGroup.appendChild(g);
+            });
+        }
+
+        function setupMindMapInteraction() {
+            const container = document.getElementById("mindmapCanvasContainer");
+            
+            container.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'circle' || e.target.tagName === 'text') return;
+                isDraggingMmCanvas = true;
+                dragStartX = e.clientX - mmPanX;
+                dragStartY = e.clientY - mmPanY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingMmCanvas) {
+                    mmPanX = e.clientX - dragStartX;
+                    mmPanY = e.clientY - dragStartY;
+                    renderMindMapNodes();
+                } else if (activeDragNode) {
+                    const rect = document.getElementById("mindmapSvg").getBoundingClientRect();
+                    const newX = (e.clientX - rect.left - mmPanX) / mmZoom;
+                    const newY = (e.clientY - rect.top - mmPanY) / mmZoom;
+                    
+                    activeDragNode.x = newX;
+                    activeDragNode.y = newY;
+                    renderMindMapNodes();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDraggingMmCanvas = false;
+                activeDragNode = null;
+            });
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = 1.1;
+                if (e.deltaY < 0) {
+                    if (mmZoom < 3.0) mmZoom *= zoomFactor;
+                } else {
+                    if (mmZoom > 0.4) mmZoom /= zoomFactor;
+                }
+                renderMindMapNodes();
+            });
+        }
+
+        let activeDragNode = null;
+        function startNodeDrag(e, node) {
+            e.stopPropagation();
+            activeDragNode = node;
+        }
+
+        function resetMindMapLayout() {
+            mmZoom = 1;
+            mmPanX = 0;
+            mmPanY = 0;
+            renderMindMapNodes();
+            showToast("Centered canvas view.", "info");
+        }
+
+        function inspectNode(e, node) {
+            e.stopPropagation();
+            const panel = document.getElementById("mindmapInspector");
+            const title = document.getElementById("inspectNodeTitle");
+            const desc = document.getElementById("inspectNodeDesc");
+
+            title.innerText = node.title;
+            desc.innerHTML = node.desc;
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([desc]).catch(err => console.error(err));
+            }
+
+            panel.classList.remove("hidden");
+        }
+
+        function closeMindmapInspector() {
+            document.getElementById("mindmapInspector").classList.add("hidden");
+        }
+
+        // ================= INTERACTIVE WORKSPACE SCREEN 3: 15 High-Yield Flashcards =================
+
+        // Prompt Gemini to produce exactly 15 rigorous study flashcards based on the selected notes file
+        async function generateFlashcards() {
+            if (!apiKey) {
+                showToast("API Key is required to compile high-yield study flashcards.", "error");
+                return;
+            }
+
+            const activeDoc = documents.find(d => d.id === activeDocId);
+            if (!activeDoc) {
+                showToast("Please select a document first from the left panel.", "warning");
+                return;
+            }
+
+            showToast("Generating exactly 15 high-yield flashcards...", "info");
+
+            const fcPrompt = `Formulate EXACTLY 15 high-yield scientific memorization questions and responses for the chemistry paper titled "${activeDoc.title}".
+Focus on key chemical mechanisms, critical mathematical formulations, and structural definitions.
+Ensure that each answer is extremely detailed and rigorous. Use clean LaTeX formatting where mathematical formulas are involved.
+
+You MUST format the output strictly as a valid JSON array of exactly 15 objects. Output NO markdown formatting or commentary. Respond with ONLY the raw JSON array containing exactly 15 flashcards matching this structural schema:
+[
+  {
+    "q": "Highly complex question here?",
+    "a": "Detailed scientific answer detailing formula or mechanisms."
+  }
+]`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: fcPrompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.2
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error("Flashcards generation API error");
+
+                const resData = await response.json();
+                const rawJson = resData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+                
+                flashcardDeck = JSON.parse(rawJson);
+
+                if (flashcardDeck.length === 0) {
+                    throw new Error("Empty array returned.");
+                }
+
+                if (flashcardDeck.length < 15) {
+                    showToast(`API generated ${flashcardDeck.length} cards, supplementing deck.`, "warning");
+                } else if (flashcardDeck.length > 15) {
+                    flashcardDeck = flashcardDeck.slice(0, 15);
+                }
+
+                activeFlashcardIndex = 0;
+                flashcardFlipped = false;
+                flashcardAnswersCount = 0;
+                flashcardCorrectAnswersCount = 0;
+
+                document.getElementById("flashcardsNotGeneratedState").classList.add("hidden");
+                document.getElementById("flashcardsActiveArea").classList.remove("hidden");
+
+                updateFlashcardUI();
+                showToast("15 High-Yield Chemistry Study Flashcards Prepared!", "success");
+
+            } catch (err) {
+                console.error(err);
+                showToast("Could not contact server. Launching high-yield default sample deck...", "warning");
+                loadFallbackFlashcardDeck();
+            }
+        }
+
+        function loadFallbackFlashcardDeck() {
+            flashcardDeck = [
+                { q: "What is Le Chatelier's principle?", a: "If a dynamic equilibrium system is subjected to a shift in concentration, temperature, volume, or pressure, the system changes to counteract the stress and establish a new equilibrium state." },
+                { q: "State the mathematical formulation of the Arrhenius equation and identify variables.", a: "The expression is $$k = A e^{-\\frac{E_a}{R T}}$$ where $k$ is the rate constant, $A$ is pre-exponential frequency factor, $E_a$ is the Arrhenius activation energy, $R$ is ideal gas constant, and $T$ is temperature in Kelvin." },
+                { q: "How does a positive catalyst accelerate reaction velocities?", a: "By offering an alternative chemical path with a lower activation energy ($E_a$), which increases the fraction of collisions possessing sufficient kinetic energy to transition to products." },
+                { q: "Write the reaction equation of auto-ionization of pure liquid water.", a: "$$\\text{H}_2\\text{O} + \\text{H}_2\\text{O} \\rightleftharpoons \\text{H}_3\\text{O}^+ + \\text{OH}^-$$ with an equilibrium constant of $K_w = [\\text{H}_3\\text{O}^+][\\text{OH}^-] = 1.0 \\times 10^{-14}$ at 25 °C." },
+                { q: "Explain the Henderson-Hasselbalch formulation for weak acid buffers.", a: "$$\\text{pH} = \\text{pK}_a + \\log\\frac{[\\text{A}^-]}{[\\text{HA}]}$$ which describes the pH profile of conjugate buffer solutions based on concentration ratios." },
+                { q: "What is the physical meaning of reaction order?", a: "The empirical power dependency of reaction velocities on specific reactant concentrations as indicated in kinetic rate law profiles." },
+                { q: "How does temperature affect $K_c$ values for endothermic processes?", a: "Because reactants absorb heat in endothermic reactions, increasing thermal kinetic energy drives the shift forward, raising concentrations of products and increasing $K_c." },
+                { q: "Define Bronsted-Lowry acids versus bases.", a: "Bronsted-Lowry acids act as proton ($H^+$) donors, whereas Bronsted-Lowry bases act as proton acceptors." },
+                { q: "What defines dynamic chemical equilibrium?", a: "A state achieved when the rate of the forward reaction equals the rate of the reverse reaction, keeping reactant and product concentrations constant." },
+                { q: "What is the relationship between pH and $H_3O^+$ concentrations?", a: "$$\\text{pH} = -\\log_{10}[\\text{H}_3\\text{O}^+]$$ meaning each change of 1 pH unit represents a 10-fold change in acid ion molarity." },
+                { q: "Identify the ideal gas constant $R$ value in standard SI units for thermodynamics.", a: "$R = 8.314 \\text{ J}/(\\text{mol}\\cdot\\text{K})$. In pressure unit studies, $R = 0.08206 \\text{ L}\\cdot\\text{atm}/(\\text{mol}\\cdot\\text{K})$ is typically used instead." },
+                { q: "How does decrease of container volume affect gas-phase ammonia production in: $\\text{N}_2 + 3\\text{H}_2 \\rightleftharpoons 2\\text{NH}_3$?", a: "Decreasing volume increases pressure. According to Le Chatelier, the equilibrium shifts to the side with fewer gas moles (the products, 2 moles of ammonia versus 4 moles of reactants)." },
+                { q: "What is the conjugate base of the weak carbonic acid $\\text{H}_2\\text{CO}_3$?", a: "The conjugate base is the hydrogen carbonate (bicarbonate) ion, $$\\text{HCO}_3^-$$ formed when the parent acid donates a single proton." },
+                { q: "Why do reaction rates generally increase with reactant concentration?", a: "Increasing concentration increases the number of particles per unit volume, which increases the frequency of effective intermolecular collisions." },
+                { q: "Explain the difference between strong acids and weak acids.", a: "Strong acids dissociate fully into ions in aqueous solution, whereas weak acids dissociate only partially, establishing dynamic equilibrium states." }
+            ];
+
+            activeFlashcardIndex = 0;
+            flashcardFlipped = false;
+            flashcardAnswersCount = 0;
+            flashcardCorrectAnswersCount = 0;
+
+            document.getElementById("flashcardsNotGeneratedState").classList.add("hidden");
+            document.getElementById("flashcardsActiveArea").classList.remove("hidden");
+
+            updateFlashcardUI();
+            showToast("Offline fallback deck loaded successfully!", "success");
+        }
+
+        function flipFlashcard() {
+            flashcardFlipped = !flashcardFlipped;
+            const container = document.getElementById("flashcardInner").parentElement;
+            if (flashcardFlipped) {
+                container.classList.add("flipped");
+            } else {
+                container.classList.remove("flipped");
+            }
+        }
+
+        function updateFlashcardUI() {
+            if (flashcardDeck.length === 0) return;
+
+            const card = flashcardDeck[activeFlashcardIndex];
+            const front = document.getElementById("cardFrontText");
+            const back = document.getElementById("cardBackText");
+            const indicatorText = document.getElementById("flashcardIndexText");
+            const progress = document.getElementById("flashcardProgressBar");
+            const scoreLabel = document.getElementById("flashcardScore");
+
+            front.innerHTML = card.q;
+            back.innerHTML = card.a;
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([front, back]).catch(err => console.error(err));
+            }
+
+            flashcardFlipped = false;
+            document.getElementById("flashcardInner").parentElement.classList.remove("flipped");
+
+            indicatorText.innerText = `Card ${activeFlashcardIndex + 1} / ${flashcardDeck.length}`;
+            progress.style.width = `${((activeFlashcardIndex + 1) / flashcardDeck.length) * 100}%`;
+            
+            if (flashcardAnswersCount > 0) {
+                scoreLabel.innerText = `${flashcardCorrectAnswersCount} / ${flashcardAnswersCount} (${Math.round((flashcardCorrectAnswersCount/flashcardAnswersCount)*100)}%)`;
+            } else {
+                scoreLabel.innerText = "0 / 0";
+            }
+        }
+
+        function evaluateFlashcard(isCorrect) {
+            flashcardAnswersCount++;
+            if (isCorrect) {
+                flashcardCorrectAnswersCount++;
+                showToast("Perfect! Kept in retention.", "success");
+            } else {
+                showToast("Noted. Make sure to review this card again.", "info");
+            }
+
+            setTimeout(() => {
+                navigateFlashcard('next');
+            }, 500);
+        }
+
+        function navigateFlashcard(direction) {
+            if (flashcardDeck.length === 0) return;
+
+            if (direction === 'next') {
+                if (activeFlashcardIndex < flashcardDeck.length - 1) {
+                    activeFlashcardIndex++;
+                } else {
+                    showToast("You have completed the deck of 15 questions! Feel free to review.", "success");
+                    activeFlashcardIndex = 0; 
+                }
+            } else {
+                if (activeFlashcardIndex > 0) {
+                    activeFlashcardIndex--;
+                } else {
+                    activeFlashcardIndex = flashcardDeck.length - 1; 
+                }
+            }
+
+            updateFlashcardUI();
+        }
+
+    </script>
+</body>
+</html>
